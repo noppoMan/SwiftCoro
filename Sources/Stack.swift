@@ -1,0 +1,38 @@
+//
+//  Stack.swift
+//  SwiftCoro
+//
+//  Created by Yuki Takei on 2016/11/13.
+//
+//
+
+class Stack<T> {
+    
+    var stackArray: [T]
+    
+    public var top: T? {
+        return stackArray.first
+    }
+    
+    public init(){
+        stackArray = [T]()
+    }
+    
+    public func push(_ element: T) {
+        stackArray.insert(element, at: 0)
+    }
+    
+    public func pop() -> T? {
+        if stackArray.count > 0 {
+            return stackArray.removeFirst()
+        } else {
+            return nil
+        }
+    }
+}
+
+extension Stack: CustomStringConvertible {
+    public var description: String {
+        return "\(self.stackArray)"
+    }
+}
