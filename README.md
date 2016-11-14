@@ -52,6 +52,18 @@ _main.transfer(coro1) // goto coro1:2
 
 print("done")
 ```
+*Result*
+```
+main: 1
+coro1: 1
+coro2: 1
+coro3: 1
+main: 2
+coro1: 2
+coro2: 2
+coro3: 2
+done
+```
 
 ## License
 This project is released under the MIT license.
