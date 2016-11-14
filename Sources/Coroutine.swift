@@ -14,20 +14,43 @@
 
 import CLibcoro
 
+var _id = 0
+
+fileprivate final class Box<A> {
+    let unbox: A
+    init(_ value: A) { unbox = value }
+}
+
 public class Coroutine {
+    
+    let id: Int
     
     let context: CoroContext
     
     let stack: CoroStack
     
-    public init(stackSize: UInt32 = 0, arg: UnsafeMutableRawPointer? = nil, coro: @escaping coro_func) throws {
+    private var routine: ((Coroutine) -> Void)?
+    
+    public init(stackSize: UInt32 = 0, routine: @escaping (Coroutine) -> Void) throws {
+        _id+=1
+        self.id = _id
+        self.routine = routine
         context = CoroContext()
         stack = CoroStack()
         try stack.alloc(stackSize: stackSize)
-        create(coro: coro, arg: arg, stack: stack)
+        
+        let corofn: @convention(c) (UnsafeMutableRawPointer?) -> Void = { ptr in
+            let c = Unmanaged<Coroutine>.fromOpaque(ptr!).takeRetainedValue()
+            c.routine?(c)
+        }
+        
+        let arg = Unmanaged.passRetained(self).toOpaque()
+        create(coro: corofn, arg: arg, stack: stack)
     }
     
     public init(_ context: CoroContext, _ stack: CoroStack) {
+        _id+=1
+        self.id = _id
         self.context = context
         self.stack = stack
     }
@@ -51,6 +74,12 @@ public class Coroutine {
     
     public func transfer(_ next: Coroutine){
         swift_coro_transfer(context.context, next.context.context)
+    }
+}
+
+extension Coroutine: CustomStringConvertible {
+    public var description: String {
+        return "id: \(id)"
     }
 }
 

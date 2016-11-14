@@ -10,25 +10,41 @@ class SwiftCoroTests: XCTestCase {
     }
     
     func testMain() {
-        var array = [Int]()
+        let _main = try! Coroutine()
         
-        co {
-            co {
-                co {
-                    co {
-                        array.append(1)
-                    }
-                    array.append(2)
-                }
-                array.append(3)
-            }
-            array.append(4)
+        var i = 0
+        
+        let coro3 = try! Coroutine { c in
+            i+=1
+            XCTAssertEqual(i, 4)
+            c.transfer(_main)
+            i+=1
+            XCTAssertEqual(i, 8)
+            c.transfer(_main)
         }
         
-        co {
-            array.append(5)
+        let coro2 = try! Coroutine { c in
+            i+=1
+            XCTAssertEqual(i, 3)
+            c.transfer(coro3)
+            i+=1
+            XCTAssertEqual(i, 7)
+            c.transfer(coro3)
         }
         
-        XCTAssertEqual(array, [1, 2, 3, 4, 5])
+        let coro1 = try! Coroutine { c in
+            i+=1
+            XCTAssertEqual(i, 2)
+            c.transfer(coro2)
+            i+=1
+            XCTAssertEqual(i, 6)
+            c.transfer(coro2)
+        }
+        
+        i+=1
+        _main.transfer(coro1)
+        i+=1
+        XCTAssertEqual(i, 5)
+        _main.transfer(coro1)
     }
 }
