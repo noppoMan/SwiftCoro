@@ -14,26 +14,15 @@
 
 import CLibcoro
 
-var _id = 0
-
-fileprivate final class Box<A> {
-    let unbox: A
-    init(_ value: A) { unbox = value }
-}
-
 public class Coroutine {
     
-    let id: Int
-    
-    let context: CoroContext
+    var context: CoroContext
     
     let stack: CoroStack
     
     private var routine: ((Coroutine) -> Void)?
     
     public init(stackSize: UInt32 = 0, routine: @escaping (Coroutine) -> Void) throws {
-        _id+=1
-        self.id = _id
         self.routine = routine
         context = CoroContext()
         stack = CoroStack()
@@ -49,8 +38,6 @@ public class Coroutine {
     }
     
     public init(_ context: CoroContext, _ stack: CoroStack) {
-        _id+=1
-        self.id = _id
         self.context = context
         self.stack = stack
     }
@@ -61,25 +48,19 @@ public class Coroutine {
     }
     
     public func create(coro: @escaping coro_func, arg: UnsafeMutableRawPointer?, stack: CoroStack){
-        coro_create(context.context, coro, arg, stack.stack.pointee.sptr, stack.stack.pointee.ssze)
+        coro_create(&context.context, coro, arg, stack.stack.sptr, stack.stack.ssze)
     }
     
     public func create(stack: CoroStack){
-        coro_create(context.context, nil, nil, stack.stack.pointee.sptr, stack.stack.pointee.ssze)
+        coro_create(&context.context, nil, nil, stack.stack.sptr, stack.stack.ssze)
     }
     
     public func create(){
-        coro_create(context.context, nil, nil, nil, 0)
+        coro_create(&context.context, nil, nil, nil, 0)
     }
     
     public func transfer(_ next: Coroutine){
-        swift_coro_transfer(context.context, next.context.context)
-    }
-}
-
-extension Coroutine: CustomStringConvertible {
-    public var description: String {
-        return "id: \(id)"
+        swift_coro_transfer(&context.context, &next.context.context)
     }
 }
 

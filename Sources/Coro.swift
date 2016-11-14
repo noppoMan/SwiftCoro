@@ -14,40 +14,30 @@
 
 import CLibcoro
 
-public class CoroStack {
-    var stack: UnsafeMutablePointer<coro_stack>
+public struct CoroStack {
+    var stack: coro_stack
     
-    convenience init(sptr: UnsafeMutableRawPointer?, ssze: Int){
-        self.init()
-        self.stack.pointee.sptr = sptr
-        self.stack.pointee.ssze = 0
+    init(sptr: UnsafeMutableRawPointer?, ssze: Int){
+        self.stack = coro_stack(sptr: sptr, ssze: ssze)
     }
     
     init() {
-        self.stack = UnsafeMutablePointer<coro_stack>.allocate(capacity: MemoryLayout<coro_stack>.size)
+        self.stack = coro_stack()
     }
     
-    public func alloc(stackSize: UInt32 = 0) throws {
-        let r = coro_stack_alloc(stack, stackSize)
+    public mutating func alloc(stackSize: UInt32 = 0) throws {
+        let r = coro_stack_alloc(&stack, stackSize)
         if r < 0 {
             throw SystemError.lastOperationError ?? SystemError.other(errorNumber: errno)
         }
     }
-    
-    deinit {
-        coro_stack_free(stack)
-    }
 }
 
-public class CoroContext {
-    var context: UnsafeMutablePointer<coro_context>
+public struct CoroContext {
+    var context: coro_context
     
     init() {
-        self.context = UnsafeMutablePointer<coro_context>.allocate(capacity: MemoryLayout<coro_context>.size)
-    }
-    
-    deinit {
-        swift_coro_destroy(context)
+        self.context = coro_context()
     }
 }
 
