@@ -14,6 +14,10 @@ class Stack<T> {
         return stackArray.first
     }
     
+    public var count: Int {
+        return stackArray.count
+    }
+    
     public init(){
         stackArray = [T]()
     }

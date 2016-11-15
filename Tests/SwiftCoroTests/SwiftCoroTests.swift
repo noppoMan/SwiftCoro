@@ -5,16 +5,38 @@ class SwiftCoroTests: XCTestCase {
 
     static var allTests : [(String, (SwiftCoroTests) -> () throws -> Void)] {
         return [
-            ("testMain", testMain),
+            ("testCoro", testCoro),
         ]
     }
     
-    func testMain() {
-        let _main = try! Coroutine()
+    func testCoroutine(){
+        let co1 = Coroutine<Int> { c in
+            c.yield(1)
+            c.yield(2)
+            c.yield(3)
+            
+            // nested coroutine
+            let co2 = Coroutine<Int> { c in
+                c.yield(1)
+                c.yield(2)
+                c.yield(3)
+            }
+            XCTAssertEqual(Coroutine<Int>.resume(co2), 1)
+            XCTAssertEqual(Coroutine<Int>.resume(co2), 2)
+            XCTAssertEqual(Coroutine<Int>.resume(co2), 3)
+        }
+        
+        XCTAssertEqual(Coroutine<Int>.resume(co1), 1)
+        XCTAssertEqual(Coroutine<Int>.resume(co1), 2)
+        XCTAssertEqual(Coroutine<Int>.resume(co1), 3)
+    }
+    
+    func testCoro() {
+        let _main = try! Coro()
         
         var i = 0
         
-        let coro3 = try! Coroutine { c in
+        let coro3 = try! Coro { c in
             i+=1
             XCTAssertEqual(i, 4)
             c.transfer(_main)
@@ -23,7 +45,7 @@ class SwiftCoroTests: XCTestCase {
             c.transfer(_main)
         }
         
-        let coro2 = try! Coroutine { c in
+        let coro2 = try! Coro { c in
             i+=1
             XCTAssertEqual(i, 3)
             c.transfer(coro3)
@@ -32,7 +54,7 @@ class SwiftCoroTests: XCTestCase {
             c.transfer(coro3)
         }
         
-        let coro1 = try! Coroutine { c in
+        let coro1 = try! Coro { c in
             i+=1
             XCTAssertEqual(i, 2)
             c.transfer(coro2)

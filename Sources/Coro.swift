@@ -6,38 +6,69 @@
 //
 //
 
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin.C
-#endif
-
 import CLibcoro
 
-public struct CoroStack {
-    var stack: coro_stack
+public class Coro {
     
-    init(sptr: UnsafeMutableRawPointer?, ssze: Int){
-        self.stack = coro_stack(sptr: sptr, ssze: ssze)
-    }
+    var context: CoroContext
     
-    init() {
-        self.stack = coro_stack()
-    }
+    let stack: CoroStack
     
-    public mutating func alloc(stackSize: UInt32 = 0) throws {
-        let r = coro_stack_alloc(&stack, stackSize)
-        if r < 0 {
-            throw SystemError.lastOperationError ?? SystemError.other(errorNumber: errno)
+    var identifier: String? = nil
+    
+    private var routine: ((Coro) -> Void)?
+    
+    public init(stackSize: UInt32 = 0, routine: @escaping (Coro) -> Void) throws {
+        self.routine = routine
+        context = CoroContext()
+        stack = CoroStack()
+        try stack.alloc(stackSize: stackSize)
+        
+        let corofn: @convention(c) (UnsafeMutableRawPointer?) -> Void = { ptr in
+            let c = Unmanaged<Coro>.fromOpaque(ptr!).takeRetainedValue()
+            c.routine?(c)
         }
+        
+        let arg = Unmanaged.passRetained(self).toOpaque()
+        create(coro: corofn, arg: arg, stack: stack)
+    }
+    
+    public init(_ context: CoroContext, _ stack: CoroStack) {
+        self.context = context
+        self.stack = stack
+    }
+    
+    public convenience init() throws {
+        self.init(CoroContext(), CoroStack(sptr: nil, ssze: 0))
+        create(stack: stack)
+    }
+    
+    public func create(coro: @escaping coro_func, arg: UnsafeMutableRawPointer?, stack: CoroStack){
+        coro_create(&context.context, coro, arg, stack.stack.sptr, stack.stack.ssze)
+    }
+    
+    public func create(stack: CoroStack){
+        coro_create(&context.context, nil, nil, stack.stack.sptr, stack.stack.ssze)
+    }
+    
+    public func create(){
+        coro_create(&context.context, nil, nil, nil, 0)
+    }
+    
+    public func transfer(_ next: Coro){
+        swift_coro_transfer(&context.context, &next.context.context)
     }
 }
 
-public struct CoroContext {
-    var context: coro_context
-    
-    init() {
-        self.context = coro_context()
+extension Coro: CustomStringConvertible {
+    public var description: String {
+        return "\nidentifier: \(identifier ?? "untitled")\nstack size: \(stack.stack.ssze)"
     }
+}
+
+extension Coro: Equatable {}
+
+public func ==(lhs: Coro, rhs: Coro) -> Bool {
+    return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
 }
 

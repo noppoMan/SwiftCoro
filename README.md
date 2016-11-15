@@ -15,12 +15,33 @@ let package = Package(
 
 ## Usage
 
+### The Basic
+
+Make a coroutine and `resume` it then context is switched to it and enters an anonymous function.
+By calling `yield` in anonymous function, you interrupt the execution of the coroutine and back to the next line of the previous `resume`.
+Also if you call `resume` again the coroutine is executed from the next line of the previous `yield`.
+
+```swift
+let co = Coroutine<Int> { c in
+    c.yield(1)
+    c.yield(2)
+    c.yield(3)
+}
+
+Coroutine<Int>.resume(co) // => 1
+Coroutine<Int>.resume(co) // => 2
+Coroutine<Int>.resume(co) // => 3
+```
+
+### Coro(Low API)
+
+You can use the low layer api of SwiftCoro that allows you to manually managed context switch.  
 In the following code, three coroutines are context switched and executed sequentially.
 
 ```swift
-private let _main = try! Coroutine()  //main coroutine
+private let _main = try! Coro()  //main coroutine
 
-let coro3 = try! Coroutine { c in
+let coro3 = try! Coro { c in
     print("coro3: 1")
     c.transfer(_main) // goto _main:2
 
@@ -28,7 +49,7 @@ let coro3 = try! Coroutine { c in
     c.transfer(_main)  // goto done
 }
 
-let coro2 = try! Coroutine { c in
+let coro2 = try! Coro { c in
     print("coro2: 1")
     c.transfer(coro3) // goto coro3:1
 
@@ -36,7 +57,7 @@ let coro2 = try! Coroutine { c in
     c.transfer(coro3) // goto coro3:2
 }
 
-let coro1 = try! Coroutine { c in
+let coro1 = try! Coro { c in
     print("coro1: 1")
     c.transfer(coro2) // goto coro2:1
 
