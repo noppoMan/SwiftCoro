@@ -8,7 +8,7 @@
 
 import CLibcoro
 
-public struct CoroStack {
+public class CoroStack {
     var stack: coro_stack
     
     init(sptr: UnsafeMutableRawPointer?, ssze: Int){
@@ -19,10 +19,14 @@ public struct CoroStack {
         self.stack = coro_stack()
     }
     
-    public mutating func alloc(stackSize: UInt32 = 0) throws {
+    public func alloc(stackSize: UInt32 = 0) throws {
         let r = coro_stack_alloc(&stack, stackSize)
         if r < 0 {
             throw SystemError.lastOperationError ?? SystemError.other(errorNumber: errno)
         }
+    }
+    
+    deinit {
+        coro_stack_free(&stack)
     }
 }

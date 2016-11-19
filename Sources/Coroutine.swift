@@ -42,7 +42,7 @@ public class Coroutine<T> {
     
     public init(_ routine: @escaping ((T) -> Void) -> Void){
         do {
-            self._coroutine = try Coro { [unowned self] c in
+            self._coroutine = try Coro { [unowned self] _ in
                 let yield: (T) -> Void = {
                     self.value = $0
                     self.coroutine.transfer(self.back!)

@@ -16,20 +16,27 @@ public class Coro {
     
     var identifier: String? = nil
     
-    private var routine: ((Coro) -> Void)?
+    var retainedSelf: Unmanaged<Coro>?
     
-    public init(stackSize: UInt32 = 0, routine: @escaping (Coro) -> Void) throws {
+    private var routine: (((Coro) -> Void) -> Void)?
+    
+    public init(stackSize: UInt32 = 0, routine: @escaping ((Coro) -> Void) -> Void) throws {
         self.routine = routine
         context = CoroContext()
         stack = CoroStack()
         try stack.alloc(stackSize: stackSize)
         
         let corofn: @convention(c) (UnsafeMutableRawPointer?) -> Void = { ptr in
-            let c = Unmanaged<Coro>.fromOpaque(ptr!).takeRetainedValue()
-            c.routine?(c)
+            let c = Unmanaged<Coro>.fromOpaque(ptr!).takeUnretainedValue()
+            
+            let transfer: (Coro) -> Void = { [weak c] next in
+                c?.transfer(next)
+            }
+            
+            c.routine?(transfer)
         }
         
-        let arg = Unmanaged.passRetained(self).toOpaque()
+        let arg = Unmanaged.passUnretained(self).toOpaque()
         create(coro: corofn, arg: arg, stack: stack)
     }
     
@@ -57,6 +64,14 @@ public class Coro {
     
     public func transfer(_ next: Coro){
         swift_coro_transfer(&context.context, &next.context.context)
+    }
+    
+    public func retain(){
+        retainedSelf = Unmanaged<Coro>.passRetained(self)
+    }
+    
+    public func release(){
+        retainedSelf?.release()
     }
 }
 

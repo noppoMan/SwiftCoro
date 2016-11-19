@@ -8,10 +8,14 @@
 
 import CLibcoro
 
-public struct CoroContext {
+public class CoroContext {
     var context: coro_context
     
     init() {
         self.context = coro_context()
+    }
+    
+    deinit {
+        swift_coro_destroy(&context)
     }
 }
