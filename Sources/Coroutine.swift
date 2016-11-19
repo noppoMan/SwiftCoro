@@ -14,17 +14,26 @@
 
 import CLibcoro
 
-private class Scheduler {
+public class Scheduler {
     static let shared = Scheduler()
     
-    let main: Coro
+    var _main: Coro?
     
-    var current: Coro
+    var main: Coro {
+        return _main!
+    }
+    
+    var current: Coro?
     
     init(){
-        main = try! Coro()
-        main.identifier = "main"
-        current = main
+        _main = try! Coro()
+        _main?.identifier = "main"
+        current = _main
+    }
+    
+    public static func terminate(){
+        Scheduler.shared._main = nil
+        Scheduler.shared.current = nil
     }
 }
 
@@ -45,7 +54,7 @@ public class Coroutine<T> {
             self._coroutine = try Coro { [unowned self] c in
                 let yield: (T) -> Void = {
                     self.value = $0
-                    self.coroutine.transfer(self.back!)
+                    c.transfer(self.back!)
                 }
                 routine(yield)
             }
@@ -59,10 +68,15 @@ public class Coroutine<T> {
         
         Scheduler.shared.current = coro.coroutine
         
-        coro.back?.transfer(Scheduler.shared.current)
+        coro.back?.transfer(Scheduler.shared.current!)
         
-        Scheduler.shared.current = coro.back!
+        Scheduler.shared.current = coro.back
         
         return coro.value!
+    }
+    
+    deinit {
+        self.back = nil
+        self._coroutine = nil
     }
 }
