@@ -22,10 +22,10 @@ By calling `yield` in anonymous function, you interrupt the execution of the cor
 Also if you call `resume` again the coroutine is executed from the next line of the previous `yield`.
 
 ```swift
-let co = Coroutine<Int> { c in
-    c.yield(1)
-    c.yield(2)
-    c.yield(3)
+let co = Coroutine<Int> { yield in
+    yield(1)
+    yield(2)
+    yield(3)
 }
 
 Coroutine<Int>.resume(co) // => 1

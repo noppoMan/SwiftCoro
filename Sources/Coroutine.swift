@@ -40,19 +40,18 @@ public class Coroutine<T> {
     
     fileprivate var value: T?
     
-    public init(_ routine: @escaping (Coroutine<T>) -> Void){
+    public init(_ routine: @escaping ((T) -> Void) -> Void){
         do {
             self._coroutine = try Coro { [unowned self] c in
-                routine(self)
+                let yield: (T) -> Void = {
+                    self.value = $0
+                    self.coroutine.transfer(self.back!)
+                }
+                routine(yield)
             }
         } catch {
             fatalError("\(error)")
         }
-    }
-    
-    public func yield(_ value: T) {
-        self.value = value
-        coroutine.transfer(back!)
     }
     
     public static func resume<T>(_ coro: Coroutine<T>) -> T {

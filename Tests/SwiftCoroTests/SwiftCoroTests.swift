@@ -10,16 +10,16 @@ class SwiftCoroTests: XCTestCase {
     }
     
     func testCoroutine(){
-        let co1 = Coroutine<Int> { c in
-            c.yield(1)
-            c.yield(2)
-            c.yield(3)
+        let co1 = Coroutine<Int> { yield in
+            yield(1)
+            yield(2)
+            yield(3)
             
             // nested coroutine
-            let co2 = Coroutine<Int> { c in
-                c.yield(1)
-                c.yield(2)
-                c.yield(3)
+            let co2 = Coroutine<Int> { yield in
+                yield(1)
+                yield(2)
+                yield(3)
             }
             XCTAssertEqual(Coroutine<Int>.resume(co2), 1)
             XCTAssertEqual(Coroutine<Int>.resume(co2), 2)
