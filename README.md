@@ -2,16 +2,10 @@
 
 A tiny coroutine implementation for Swift
 
-## Installation
-```swift
-import PackageDescription
+# ⚠️
+SwiftCoro is in early development and pretty experimental So Don't use this in your project.
 
-let package = Package(
-    dependencies: [
-        .Package(url: "https://github.com/noppoMan/SwiftCoro.git", majorVersion: 0, minor: 1)
-    ]
-)
-```
+Currently, objects used in coroutines are not freed because we use coro_transfer(setjmp/longjmp) in the C world before reaching the tail of the function in Swift world.(ARC would work if the function call is finished)
 
 ## Usage
 
